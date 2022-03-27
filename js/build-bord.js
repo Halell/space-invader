@@ -10,7 +10,6 @@ function createBoard() {
         for (var j = 0; j < 14; j++) {
             board[i][j] = { type: SKY, gameObj: null }
             //create frame
-
             if (i === 0 || i === 13) {
                 board[i][j].type = 'frame horizontal'
                 board[i][j].gameObj = 'frame'
@@ -20,8 +19,9 @@ function createBoard() {
                 board[i][j].type = 'frame vertical'
                 board[i][j].gameObj = 'frame'
             }
-            //alien in 4 upper rows
-            if (i > 0 && i < 5 && j > 0 && j < 8) board[i][j].gameObj = ALIEN
+            //alien in 4 upper rows 7 left cells                               // later change to var option
+            if (i > 0 && i < gAliens.length + 1 &&
+                j > 0 && j <= gAliens[0][0]) board[i][j].gameObj = ALIEN
         }
     }
     //gamer in bottom left corner

@@ -1,120 +1,141 @@
-
 'use strict'
 
 
-const ALIEN_SPEED = 1000
+const ALIEN_SPEED = 200
 var gIntervalAliens
+var gIsAlienFreeze = false
+var gAlienPos = {
+    rightEdge: gAliens[0][0],
+    leftEdge: 1,
+    bottom: gAliens.length
+}
 
-
-
-
-// The following two variables represent the part of the matrix (some rows)
-// that we should shift (left, right, and bottom)
-// We need to update those when:
-// (1) shifting down and (2) last alien was cleared from row
-var gAliensTopRowIdx = 1
-var gAliensBottomRowIdx = 4
-var gIsAlienFreeze = true
-// function createAliens(board) {}
-var alienBottomIdx = 4
-function handleAlienHit(pos) { }
-
-
-
-
-function shiftAliens(direction, from, to, isEdge = false) {
-    var counter = 1                  // change name
-    for (var i = from.i; i <= alienBottomIdx; i++) {
-        for (var j = from.j; j !== to.j + direction; j += direction) {
-            if (!isEdge) {
-                gBoard[i][j + (direction * -1)].gameObj = gBoard[i][j].gameObj
-                if (j === to.j) gBoard[i][to.j].gameObj = null
-            } else {
-                gBoard[alienBottomIdx][j + (direction * -1)].gameObj = gBoard[alienBottomIdx - counter][j + (direction * -1)].gameObj
-                if (alienBottomIdx - counter === from.i) {
-                    gBoard[alienBottomIdx - counter][j + (direction * -1)].gameObj = null
-                    if (j === to.j) {
-                        console.log(gBoard)
-                        i++
-                    }
+function shiftAliens(direction, isEdge = false) {
+    var incrementor = 0
+    var from = (direction > 0) ? gAlienPos.leftEdge : gAlienPos.rightEdge
+    var to = (direction > 0) ? gAlienPos.rightEdge : gAlienPos.leftEdge
+    var bottom = gAlienPos.bottom
+    var topAlien = bottom + 1 - gAliens.length
+    for (var i = topAlien; i <= bottom; i++) {
+        for (var j = from; j !== to + direction; j += direction) {
+            if (!isEdge) {                                   // not edge of board -> shift left \ right
+                var ngCell = gBoard[i][j + (direction * -1)]
+                if (ngCell.gameObj === LASER) {
+                    gLaserInterval = clearInterval(gLaserInterval)
+                    gHero.isShoot = false
+                    ngCell.gameObj = null
+                }
+                if (gBoard[i][j].gameObj === LASER) gBoard[i][j].gameObj = null
+                ngCell.gameObj = gBoard[i][j].gameObj
+                if (j === to) gBoard[i][to].gameObj = null
+            } else { //  edge of board -> shift down
+                var nextLineCell = gBoard[bottom - incrementor + 1][j]
+                var currLineCell = gBoard[bottom - incrementor][j].gameObj
+                nextLineCell.gameObj = currLineCell
+                if (bottom - incrementor === topAlien) {
+                    gBoard[bottom - incrementor][j].gameObj = null
                 }
             }
         }
-        counter++
+        incrementor++
     }
     renderBoard(gBoard)
+    debugging('moving alien')
 }
 
-
-
-function shiftBoardLeft(board, fromI, toI) { }
-function shiftBoardDown(board, fromI, toI) { }
-// runs the interval for moving aliens side to side and down
-// it re-renders the board every time
-// when the aliens are reaching the hero row - interval stops
-
-
-
-
-
-
-
-
-
 function moveAliens() {
-    var direction = -1
-    var idx = 1
-    var from = { i: null, j: null }
-    var to = { i: null, j: null }
+    var direction = -1    //curr movement direction of aliens. -1 represent direction right alternatively 1 for left
+    var isOneDown = true
     gIntervalAliens = setInterval(() => {
-        if (gIsAlienFreeze) {
-            if (direction === -1 && from.j === gBoard.length - 3) {
-                alienBottomIdx++
-                shiftAliens(direction, from, to, true)
-                direction = 1
-                idx++
-                return
+        if (!gIsAlienFreeze) {
+            if (gAlienPos.rightEdge !== gBoard[0].length - 2 &&
+                gAlienPos.leftEdge !== 1 || isOneDown) {                // is not edge of board (when is not 12 && is not 1)
+                if (gAlienPos.bottom === gBoard.length - 2) {
+                    gGame.state = 'game  over'
+                    gameOver()
+                    return
+                }
+                shiftAliens(direction)
+                isOneDown = false
+                gAlienPos.leftEdge += (direction > 0) ? -1 : 1
+                gAlienPos.rightEdge += (direction < 0) ? 1 : -1
+            } else {
+                if (gAlienPos.bottom === gBoard.length - 2) {
+                    gGame.state = 'game  over'
+                    gameOver()
+                    return
+                }
+                direction = (direction === -1) ? 1 : -1    // on right edge change to -1 : on left edge change to 1
+                shiftAliens(direction, true)
+                isOneDown = true
+                gAlienPos.bottom++
             }
-            else if (direction === 1 && from.j === 2) {
-                alienBottomIdx++
-                shiftAliens(direction, from, to, true)
-                direction = -1
-                idx++
-                return
-            }
-            from = checkAlienRows(idx, (direction === 1), true)
-            to = checkAlienRows(idx, (direction !== 1), true)
-            shiftAliens(direction, from, to)
-            console.log(`{${direction}, from ${from.i}:${from.j}, to ${to.i}:${to.j}}`)
         }
     }, ALIEN_SPEED)
 }
 
 
+// var from = checkAlienRows(idx, (direction === 1), true) // starting of index j in shifting loop 
+// var to = checkAlienRows(idx, (direction !== 1), true)   // end of index j in shifting loop 
 
 
+// function checkAlienRows(idx, checkIsMostLeft, isTop) {
+//     var isAlien = false
+//     var i = (checkIsMostLeft) ? 1 : gBoard.length - 2
+//     var initialI = i
+//     while (!isAlien) {
+//         if (gBoard[idx][i].gameObj === ALIEN) isAlien = true
+//         else i += (checkIsMostLeft) ? 1 : -1
 
+//         if (checkIsMostLeft && i === gBoard.length - 1) {
+//             idx += (isTop) ? 1 : -1
+//             i = initialI
+//         } else if (!checkIsMostLeft && i === 0) {
+//             idx--
+//             i = initialI
+//         }
+//     }
+//     return { i: idx, j: i }
+// }
 
-
-
-
-
-
-function checkAlienRows(idx, isGoingRt, isTop) {
+function checkAliensEdges() {
     var isAlien = false
-    var i = (isGoingRt) ? 1 : gBoard.length - 2
-    var initialI = i
-    while (!isAlien) {
-        if (gBoard[idx][i].gameObj) isAlien = true            // what when cell obj is lazar?
-        else i += (isGoingRt) ? 1 : -1
+    var i = gAlienPos.bottom
+    for (var j = 0; j < 2; j++) {
+        var idx = (!j) ? gAlienPos.leftEdge : gAlienPos.rightEdge
+        var incrementor = (!j) ? 1 : -1
+        while (!isAlien) {
+            if (gBoard[i][idx].gameObj === ALIEN) {
+                isAlien = true
+                if (!j) {
+                    gAlienPos.leftEdge = idx
+                } else {
+                    gAlienPos.rightEdge = idx
+                }
 
-        if (isGoingRt && i === gBoard.length - 1) {
-            idx += (isTop) ? 1 : -1
-            i = initialI
-        } else if (!isGoingRt && i === 1) {
-            idx--
-            i = initialI
+            } else {
+                i--
+                if (i + gAliens.length === gAlienPos.bottom) {
+                    idx += incrementor
+                    i = gAlienPos.bottom
+                }
+            }
         }
+        var isAlien = false
     }
-    return { i: idx, j: i }
+    checkAliensBottom()
 }
+
+function checkAliensBottom() {
+    var isAlien = false
+    var i = gAlienPos.leftEdge
+    while (!isAlien) {
+        if (gBoard[gAlienPos.bottom][i].gameObj === ALIEN) isAlien = true
+        if (i > gAlienPos.rightEdge || i === gBoard.length - 1) {
+            gAlienPos.bottom--
+            i = gAlienPos.leftEdge
+        }
+        i++
+    }
+}
+

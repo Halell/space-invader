@@ -1,17 +1,18 @@
 'use strict'
 
 const BOARD_SIZE = 14
-const ALIENS_ROW_LENGTH = 8
-const ALIENS_ROW_COUNT = 3
+var gAliens = [[8], [8], [8]]
 const HERO = '♆'
 const ALIEN = '👽'
 const LASER = '⤊'
 
-// var gAliensAmt={i:4,j:7} // later add this
+
+// var gAliensAmt={i:4,j:7}        // later add this
 
 var gBoard
 var gGame = {
     isOn: false,
+    state: '',
     aliensCount: 0
 }
 
@@ -19,11 +20,40 @@ var gGame = {
 function init() {
     gBoard = createBoard()
     renderBoard(gBoard)
+}
+
+function start() {
+    if (gGame.isOn) {
+        gameOver()
+    }
+    init()
+    scoreUpdate()
+    gGame.state = ''
+    popMessage()
+    gGame.isOn = true
     moveAliens()
+}
+
+function gameOver() {
+    popMessage()
+    gIntervalAliens = clearInterval(gIntervalAliens)
+    gLaserInterval = clearInterval(gLaserInterval)
+    gGame.isOn = false
+    gGame.aliensCount = 0
+    gGame.state = ''
+    gHero.pos = 1
+    gHero.isShoot = false
+    gAlienPos = {
+        rightEdge: gAliens[0][0],
+        leftEdge: 1,
+        bottom: gAliens.length
+    }
+
 }
 
 // Handle game keys
 function onKeyDown(ev) {
+    if (!gGame.isOn) return
     switch (ev.key) {
         case 'ArrowLeft':
             if (gHero.pos === 1) return
@@ -46,4 +76,15 @@ function onKeyDown(ev) {
     }
 }
 
+var gAlienCounter = 0
 
+function debugging(str) {
+    for (var i = 0; i < gBoard.length; i++) {
+        for (var j = 0; j < gBoard[0].length; j++) {
+            if (gBoard[i][j].gameObj === ALIEN) gAlienCounter++
+        }
+    }
+    console.log(str + ' ' + gGame.aliensCount)
+    console.log('db               ' + gAlienCounter)
+    gAlienCounter = 0
+}
