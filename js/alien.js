@@ -1,7 +1,7 @@
 'use strict'
 
 
-const ALIEN_SPEED = 200
+const ALIEN_SPEED = 500
 var gIntervalAliens
 var gIsAlienFreeze = false
 var gAlienPos = {
