@@ -1,6 +1,6 @@
 'use strict'
 
-const LASER_SPEED = 10
+const LASER_SPEED = 80
 var gLaserInterval
 var gIsAlienMoving = false
 var gHero = { pos: 1, isShoot: false }
